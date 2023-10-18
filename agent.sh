@@ -26,3 +26,24 @@ chown root:wazuh /var/ossec/active-response/bin/script.py
 systemctl restart wazuh-agent
 
 # Command Detection
+apt -y install auditd
+systemctl start auditd
+systemctl enable auditd
+
+echo "-a exit,always -F arch=b64 -F euid=0 -S execve -k  audit-wazuh-c" >> /etc/audit/audit.rules
+echo "-a exit,always -F arch=b32 -F euid=0 -S execve -k  audit-wazuh-c" >> /etc/audit/audit.rules
+
+auditctl -R /etc/audit/audit.rules
+auditctl -l
+
+COMMANDS="<ossec_config>
+  <localfile>
+    <log_format>audit</log_format>
+    <location>/var/log/audit/audit.log</location>
+  </localfile>
+</ossec_config>
+"
+
+echo $COMMANDS >> /var/ossec/etc/ossec.conf
+
+systemctl restart wazuh-agent
